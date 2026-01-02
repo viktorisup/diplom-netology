@@ -1,0 +1,47 @@
+resource "yandex_compute_instance" "nat_mikrotik" {
+  name        = "nat-mikrotik"
+  hostname    = "nat-mikrotik"
+  zone        = var.default_zone
+  platform_id = "standard-v1"
+  allow_stopping_for_update = true
+
+  resources {
+    cores  = 2
+    memory = 1
+    core_fraction = 5
+  }
+
+  boot_disk {
+    initialize_params {
+      image_id = data.yandex_compute_image.mikrotik-chr.image_id
+      size     = 10
+      type     = "network-hdd"
+    }
+  }
+
+  scheduling_policy {
+    preemptible = true
+  }
+  
+  network_interface {
+    index = 0
+    subnet_id = yandex_vpc_subnet.my_subnet["publicnet-a"].id
+    # security_group_ids = [yandex_vpc_security_group.nat-instance-sg.id]
+    ip_address = "10.0.0.253"
+    nat = true
+  }
+
+  network_interface {
+    index = 1
+    subnet_id = yandex_vpc_subnet.my_subnet["privatnet-a"].id
+    # security_group_ids = [yandex_vpc_security_group.nat-instance-sg.id]
+    ip_address = "10.10.0.253"
+    nat = false
+  }
+
+  metadata = {
+  ssh-keys         = "ubuntu:${file("~/.ssh/id_ed25519_yc.pub")}"
+  "serial-port-enable" = "1"
+  }
+
+ }
