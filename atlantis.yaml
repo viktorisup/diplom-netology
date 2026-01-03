@@ -5,7 +5,7 @@ projects:
     autoplan:
       enabled: true
       when_modified:
-        - "**/*.tf"
-        - "**/*.tfvars"
-        - ".terraform.lock.hcl"
-        - "modules/**/*.tf"
+        - "infra-terraform/main/**/*.tf"
+        - "infra-terraform/main/**/*.tfvars"
+        - "infra-terraform/main/.terraform.lock.hcl"
+        - "infra-terraform/main/modules/**/*.tf"

@@ -41,7 +41,7 @@ terraform apply
 
 ### Создание Kubernetes кластера
 
-Я решил развернуть кластер через kubespray, с некоторой особенностью через NAT
+Я решил развернуть кластер через kubespray, с некоторой особенностью через NAT.
 Клонируем репозиторий
 ```
 git clone git@github.com:kubernetes-sigs/kubespray.git && cd kubespray
@@ -129,6 +129,7 @@ https://github.com/viktorisup/deploy-app
 ###  Подготовка cистемы мониторинга и деплой приложения
 
 **Установка мониторинга**
+
 Клонируем репозиторий и заходим в него 
 ```
 git clone git@github.com:prometheus-operator/kube-prometheus.git && cd kube-prometheus
