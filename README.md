@@ -289,3 +289,7 @@ helm upgrade atlantis runatlantis/atlantis -f /root/netology/values.yaml -n atla
 **Скриншот коментариев Атлантис в PR**
 
 ![](screenshots/pr_atlantis.png)
+
+**Скриншот отработанного плана**
+
+![](screenshots/apply_atlantis.png)
