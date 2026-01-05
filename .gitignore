@@ -13,5 +13,5 @@ override.tf.json
 .terraformrc
 terraform.rc
 
-kubespray/*
-k8s-configs/kube-prometheus/*
+kubespray/
+k8s-configs/kube-prometheus/
