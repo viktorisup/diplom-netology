@@ -32,7 +32,7 @@ resource "yandex_compute_instance" "k8s_vm" {
   }
 
   metadata = {
-    ssh-keys         = "ubuntu:${file("~/.ssh/id_ed25519_yc.pub")}"
+    ssh-keys         = "ubuntu:ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIOWtlnPDyxmswlkNycp1u1BWqO+wlmmUyf4z8+XG4D9Z"
     "serial-port-enable" = "1"
   }
 }

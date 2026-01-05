@@ -41,7 +41,7 @@ terraform apply
 
 ### Создание Kubernetes кластера
 
-Я решил развернуть кластер через kubespray, с некоторой особенностью через NAT
+Я решил развернуть кластер через kubespray, с некоторой особенностью через NAT.
 Клонируем репозиторий
 ```
 git clone git@github.com:kubernetes-sigs/kubespray.git && cd kubespray
@@ -59,7 +59,7 @@ git clone git@github.com:kubernetes-sigs/kubespray.git && cd kubespray
 Далее запускаем плейбук
 
 ```
-ansible-playbook -i inventory/mycluster/inventory.ini cluster.yml -b -v --private-key=~/.ssh/id_ed25519_yc
+ansible-playbook -i inventory/mycluster/inventory.ini cluster.yml -b -v --private-key=~/.ssh/id_ed25519_home
 ```
 
 Единственное не стал разбираться где в плейбуке указывать SNI и просто руками поправил ClusterConfiguration
@@ -128,7 +128,16 @@ https://github.com/viktorisup/deploy-app
 
 ###  Подготовка cистемы мониторинга и деплой приложения
 
+**Так как часть с терраформом я сделал в Яндекс облаке как требовалось , дальше я буду делать все на своем кластере для экономии средств**
+
+**Файлы для настройки K8S**
+
+```
+https://github.com/viktorisup/diplom-netology/tree/main/k8s-configs
+```
+
 **Установка мониторинга**
+
 Клонируем репозиторий и заходим в него 
 ```
 git clone git@github.com:prometheus-operator/kube-prometheus.git && cd kube-prometheus
@@ -140,15 +149,25 @@ kubectl wait --for condition=Established --all CustomResourceDefinition --namesp
 kubectl apply -f manifests/
 ```
 
+**Http доступ на 80(443) порту к web интерфейсу grafana**
+
+```
+https://grafana.isupit.ru
+```
+
+**Скриншот дажборда графаны**
+
+![](screenshots/grafana.png)
+
+**Http доступ на 80(443) порту к тестовому приложению**
+
+```
+https://myapp.isupit.ru/
+```
+
 **установка Atlantis**
 
-создадим директорию на всех нодах для локального storage
-
-```
-mkdir -p /k8s/storage/atlantis
-```
-
-Применим манифесты k8s-configs/storage-class/sc-local.yaml и k8s-configs/pv/atlantis-pv.yaml
+Вам зарание надо установить какого либо provisioner для выделения pv. Я выбрал longhorn, в ридми описано как его установить. Либо в ручную создать storage class и pv.
 
 Установим хелм чарт Atlantis. Предварительно надо создать токен в github и дать права. 
 
@@ -170,9 +189,9 @@ orgAllowlist: github.com/runatlantis/*
 Устанавливаем сам чарт
 
 ```
-helm install atlantis runatlantis/atlantis -f values.yaml
+helm install atlantis runatlantis/atlantis -f values.yaml -n atlantis
 ```
-Далее настраиваем проки сервер с tls терминацией(nginx) , который будет проксировать запросвы с наружи на сервис NodePort. Можно через ингрес или сервис loadBalancer , но в облаке у меня не получилось настроить Metallb. Так как у меня кубернетес on-prem. После того как есть доступ до Атлантиса из интернета , можно переходить к настройке самого атлантиса.
+Далее настраиваем проки сервер с tls терминацией(nginx) , который будет проксировать запросвы с наружи на сервис lb. Можно через ингрес или сервис nodeport. После того как есть доступ до Атлантиса из интернета , можно переходить к настройке самого атлантиса.
 Заходим на свой Атлантис https://$ATLANTIS_HOST/github-app/setup и правим json,  example меняем на свой домен. Далее жмем setup
 ```
 {
@@ -207,4 +226,66 @@ helm install atlantis runatlantis/atlantis -f values.yaml
 }
 ```
 Далее будет редирект на гитхаб и страничка с Github app created successfully
-Креды сохраняем на всякий случай. И переходим по ссылке которую предлагает Атлантис для инсталяции приложения в GH. Далее приложение должно появится в https://github.com/settings/apps
+Креды сохраняем на всякий случай. И переходим по ссылке которую предлагает Атлантис для инсталяции приложения в GH. Далее приложение должно появится в https://github.com/settings/apps 
+
+После инсталяции приложения не сразу все заработало пришлось в настройке приложения GH указать тот же вебхук-секрет что и при установке чарта. Еще добавил креды в values которые были созданы при установке приложения. Еще создать и прокинуть секреты для YC. После обновить чарт
+
+Создание секрета доступ к s3
+```
+kubectl -n atlantis create secret generic yc-s3-creds-aws --from-literal=AWS_ACCESS_KEY_ID='xxxxxxxxxx' --from-literal=AWS_SECRET_ACCESS_KEY='xxxxxxxxxx'
+```
+Создание секрета ключа доступа к ЯО
+```
+kubectl -n atlantis create secret generic yc-sa-key --from-file=authorized_key.json="/root/.authorized_key.json"
+```
+Правка values (все изменения)
+```
+orgAllowlist: "github.com/viktorisup/*"
+
+github:
+  user: "viktorisup"
+  token: "xxxxx"
+  secret: "xxxx"
+  hostname: "github.com"
+
+githubApp:
+  id: "12345678"
+  installationId: "12345678"
+  slug: atlantis
+  key: |
+    -----BEGIN PRIVATE KEY-----
+    xxxx
+    -----END PRIVATE KEY-----
+  secret: xxxxx
+
+environment:
+  YC_SERVICE_ACCOUNT_KEY_FILE: /var/run/yc/authorized_key.json
+
+extraVolumes:
+  - name: yc-sa-key
+    secret:
+      secretName: yc-sa-key
+
+extraVolumeMounts:
+  - name: yc-sa-key
+    mountPath: /var/run/yc
+    readOnly: true
+
+environmentSecrets:
+  - name: AWS_ACCESS_KEY_ID
+    secretKeyRef:
+      name: yc-s3-creds-aws
+      key: AWS_ACCESS_KEY_ID
+  - name: AWS_SECRET_ACCESS_KEY
+    secretKeyRef:
+      name: yc-s3-creds-aws
+      key: AWS_SECRET_ACCESS_KEY
+```
+После чего обновляем чарт
+
+```
+helm upgrade atlantis runatlantis/atlantis -f /root/netology/values.yaml -n atlantis
+```
+**Скриншот коментариев Атлантис в PR**
+
+![](screenshots/pr_atlantis.png)

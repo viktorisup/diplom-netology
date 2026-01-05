@@ -1,11 +1,32 @@
 version: 3
+
+workflows:
+  default:
+    plan:
+      steps:
+        - init
+        - plan
+    apply:
+      steps:
+        - apply
+
+  destroy:
+    plan:
+      steps:
+        - init
+        - run: terraform plan -destroy -input=false -out $PLANFILE
+    apply:
+      steps:
+        - run: terraform apply -input=false $PLANFILE
+
 projects:
   - name: infra-terraform-main
     dir: infra-terraform/main
+    workflow: default
     autoplan:
       enabled: true
       when_modified:
-        - "**/*.tf"
-        - "**/*.tfvars"
-        - ".terraform.lock.hcl"
-        - "modules/**/*.tf"
+        - "infra-terraform/main/**/*.tf"
+        - "infra-terraform/main/**/*.tfvars"
+        - "infra-terraform/main/.terraform.lock.hcl"
+        - "infra-terraform/main/modules/**/*.tf"
