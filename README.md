@@ -293,3 +293,20 @@ helm upgrade atlantis runatlantis/atlantis -f /root/netology/values.yaml -n atla
 **Скриншот отработанного плана**
 
 ![](screenshots/apply_atlantis.png)
+
+### Установка и настройка CI/CD
+
+Я настроил CI/CD через Teamcity
+
+**Интерфейс ci/cd сервиса доступен по http**
+
+```
+https://teamcity.isupit.ru
+```
+
+**Скриншоты успешных сборок и деплоя**
+
+![](screenshots/teamcity-build.png)
+
+![](screenshots/teamcity-deploy.png)
+
